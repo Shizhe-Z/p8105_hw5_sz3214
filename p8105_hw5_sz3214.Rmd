@@ -103,6 +103,9 @@ data.frame(mu = mu_value, power = power) |>
   labs(title = "Power vs. True Mean (mu)", x = expression(mu), y = "Power")
 ```
 
+Effect size and power are positively correlated. 
+The rate of increase in power slows as the effect size becomes very large.
+
 **plot avg mu_hat vs mu**
 
 ```{r}
@@ -115,5 +118,5 @@ data.frame(mu = mu_value, avg_estimate = avg_estimates, avg_estimate_rejected = 
   labs(title = "Average Estimate of mu_hat vs True Mean", x = expression(mu), y = "Average Estimate of mu_hat")
 ```
 
-
+The average estimate of $\hat{\mu}$ for tests where the null hypothesis is rejected is approximately equal to the true value of $\mu$ because these tests provide stronger evidence of a real effect, making the estimates more accurate.
 

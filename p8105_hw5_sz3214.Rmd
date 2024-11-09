@@ -7,6 +7,10 @@ date: "2024-11-09"
 
 ```{r setup, include=FALSE}
 library(ggplot2)
+library(broom)
+library(dplyr)
+library(purrr)
+library(tidyr)
 ```
 
 
@@ -53,5 +57,63 @@ ggplot(data, aes(x = group_size, y = probability)) +
 ```
 
 As the group size increases, the probability that at least two people in the group share a birthday rises quickly.
+
+
+## problem 2
+
+**t-test**
+
+```{r}
+n = 30  
+sigma = 5 
+alpha = 0.05 
+num = 5000 
+mu_value = c(0, 1, 2, 3, 4, 5, 6)
+
+power = numeric(length(mu_value))
+avg_estimates = numeric(length(mu_value))
+avg_estimates_rejected = numeric(length(mu_value))
+
+for (j in seq_along(mu_value)) {
+  mu = mu_value[j]
+  p_value = numeric(num)
+  mu_hat = numeric(num)
+  
+  for (i in 1:num) {
+    x = rnorm(n, mean = mu, sd = sigma)  
+    t_test = t.test(x, mu = 0)  
+    p_value[i] = t_test$p.value
+    mu_hat[i] = t_test$estimate
+  }
+  
+  power[j] = mean(p_value < alpha)
+  avg_estimates[j] = mean(mu_hat)
+  avg_estimates_rejected[j] = ifelse(sum(p_value < alpha) > 0, mean(mu_hat[p_value < alpha]), NA)
+}
+
+```
+
+**plot mu vs power**
+
+```{r}
+data.frame(mu = mu_value, power = power) |>
+  ggplot(aes(x = mu, y = power)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Power vs. True Mean (mu)", x = expression(mu), y = "Power")
+```
+
+**plot avg mu_hat vs mu**
+
+```{r}
+data.frame(mu = mu_value, avg_estimate = avg_estimates, avg_estimate_rejected = avg_estimates_rejected) |>
+  ggplot(aes(x = mu)) +
+  geom_line(aes(y = avg_estimate), color = "black") +
+  geom_point(aes(y = avg_estimate), color = "black") +
+  geom_line(aes(y = avg_estimate_rejected), color = "blue", na.rm = TRUE) +
+  geom_point(aes(y = avg_estimate_rejected), color = "blue", na.rm = TRUE) +
+  labs(title = "Average Estimate of mu_hat vs True Mean", x = expression(mu), y = "Average Estimate of mu_hat")
+```
+
 
 

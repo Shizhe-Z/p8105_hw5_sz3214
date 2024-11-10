@@ -8,6 +8,7 @@ date: "2024-11-09"
 ```{r setup, include=FALSE}
 library(ggplot2)
 library(broom)
+library(readr)
 library(dplyr)
 library(purrr)
 library(tidyr)
@@ -119,4 +120,72 @@ data.frame(mu = mu_value, avg_estimate = avg_estimates, avg_estimate_rejected = 
 ```
 
 The average estimate of $\hat{\mu}$ for tests where the null hypothesis is rejected is approximately equal to the true value of $\mu$ because these tests provide stronger evidence of a real effect, making the estimates more accurate.
+
+
+## problem 3
+
+
+```{r}
+homicide = read.csv("homicide-data.csv")
+str(homicide)
+```
+
+The raw dataset has 52179 observations and 12 variables, including uid, reported_date, victim_last, victim_first, victim_race, victim_age, victim_sex, city, state, lat, lon and disposition.
+
+**create new variable**   
+
+```{r}
+homicide_count = homicide |>
+  mutate(state = ifelse(city == "Tulsa" & state == "AL", "OK", state)) |>
+  mutate(city_state = paste(city, state, sep = ", ")) |>
+  group_by(city_state) |>
+  summarise(
+    total_homicides = n(),
+    unsolved_homicides = sum(disposition %in% c("Closed without arrest", "Open/No arrest"))
+  )
+
+homicide_count
+```
+
+**Baltimore**
+
+```{r}
+homicide_count |>
+  filter(city_state == "Baltimore, MD") |>
+  summarise(prop_test = list(prop.test(unsolved_homicides, total_homicides))) |>
+  mutate(output = map(prop_test, broom::tidy)) |>
+  unnest(output) |>
+  select(estimate, conf.low, conf.high)
+```
+
+**each city**
+
+run prop.test
+
+```{r}
+each_city = homicide_count |>
+  mutate(
+    prop_test = purrr::map2(unsolved_homicides, total_homicides, ~prop.test(.x, .y) |> broom::tidy()),
+    estimate = purrr::map(prop_test, ~.x$estimate),
+    conf.low = purrr::map(prop_test, ~.x$conf.low),
+    conf.high = purrr::map(prop_test, ~.x$conf.high)
+  ) |>
+  unnest(c(estimate, conf.low, conf.high)) |>
+  select(city_state, estimate, conf.low, conf.high)
+
+each_city
+```
+
+plot
+
+```{r}
+each_city |>
+  ggplot(aes(x = reorder(city_state, estimate), y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  coord_flip() +
+  labs(title = "Proportion of Unsolved Homicides by City", x = "City", y = "Proportion of Unsolved Homicides") +
+  theme_minimal()
+```
+
 
